@@ -1,0 +1,340 @@
+
+
+# **Nmap (Network Mapper) - Comprehensive Notes**
+
+## **1. Introduction to Nmap**
+
+Nmap (Network Mapper) is a free, open-source, and powerful tool used for network discovery and security auditing. It was created by Gordon Lyon (also known by his pseudonym Fyodor). Nmap is indispensable for network administrators, security professionals, and ethical hackers for understanding network topology, managing service upgrade schedules, and monitoring host or service uptime.
+
+### **Core Capabilities:**
+*   **Host Discovery:** Identifying hosts on a network (e.g., responding to pings).
+*   **Port Scanning:** Enumerating open ports on target hosts.
+*   **Service & Version Detection:** Determining what software and version is running on an open port.
+*   **OS Detection:** Identifying the operating system and hardware characteristics of a network device.
+*   **Network Mapping:** Visualizing the relationships between hosts.
+*   **Vulnerability Scanning:** Using the Nmap Scripting Engine (NSE) to find known vulnerabilities.
+*   **Interactivity & Scripting:** Allowing for advanced automation and customization.
+
+---
+
+## **2. Installation**
+
+### **Linux (Debian/Ubuntu):**
+```bash
+sudo apt update && sudo apt install nmap
+```
+
+### **Linux (Red Hat/CentOS/Fedora):**
+```bash
+sudo dnf install nmap  # or yum for older systems
+```
+
+### **Windows:**
+1.  Download the official installer from the [Nmap download page](https://nmap.org/download.html).
+2.  Run the installer as an Administrator.
+3.  Follow the installation wizard, ensuring to install the Npcap packet capture library when prompted.
+
+### **macOS:**
+```bash
+# Using Homebrew (recommended)
+brew install nmap
+```
+
+---
+
+## **3. Basic Scanning & Target Specification**
+
+### **Simple Scans:**
+```bash
+# Scan a single host by hostname
+nmap scanme.nmap.org
+
+# Scan a single host by IP address
+nmap 93.184.216.34
+
+# Scan multiple targets separated by spaces
+nmap 192.168.1.1 192.168.1.5 scanme.nmap.org
+
+# Scan a range of IPs
+nmap 192.168.1.1-254
+
+# Scan using CIDR notation
+nmap 192.168.1.0/24
+```
+
+### **Reading Targets from a File:**
+Create a file `targets.txt` with each target on a new line.
+```bash
+nmap -iL targets.txt
+```
+
+### **Excluding Targets:**
+```bash
+# Scan a network but exclude a specific IP
+nmap 192.168.1.0/24 --exclude 192.168.1.100
+
+# Exclude a list of targets from a file
+nmap 192.168.1.0/24 --excludefile exclude.txt
+```
+
+### **Controlling Output:**
+```bash
+# Increase verbosity for more details
+nmap -v target.com
+
+# Save output to a file in Normal format
+nmap -oN scan_results.txt target.com
+
+# Save output in all three major formats (Normal, XML, Grepable)
+nmap -oA scan_results target.com
+```
+
+---
+
+## **4. Port Scanning Techniques**
+
+This is the core function of Nmap. The technique you choose depends on your goal (speed vs. stealth) and your privileges (root/admin vs. user).
+
+### **TCP Scans:**
+
+| Technique | Flag | Description | Privileges Required |
+| :--- | :--- | :--- | :--- |
+| **TCP Connect Scan** | `-sT` | Completes the full three-way handshake. Loud, but accurate. | User |
+| **SYN "Stealth" Scan** | `-sS` | Half-open scan. Sends SYN, receives SYN/ACK, then RST. Faster & stealthier. **Default for root.** | Root/Admin |
+| **ACK Scan** | `-sA` | Used to map firewall rulesets. Doesn't determine open/closed, but unfiltered/filtered. | Root/Admin |
+| **Window Scan** | `-sW` | Similar to ACK scan but can sometimes detect open ports on certain systems. | Root/Admin |
+| **Maimon Scan** | `-sM` | Sends FIN/ACK probes. Rarely effective. | Root/Admin |
+
+### **UDP Scans:**
+```bash
+# UDP Scan (-sU)
+# Slower than TCP scans due to the nature of UDP.
+nmap -sU target.com
+```
+
+### **Advanced TCP Scans (Evasion):**
+These scans exploit ambiguities in the RFC to differentiate open from closed ports. They can bypass simple firewalls but are often unreliable on modern systems.
+
+| Technique | Flag | Description |
+| :--- | :--- | :--- |
+| **NULL Scan** | `-sN` | Sends a packet with no TCP flags set. |
+| **FIN Scan** | `-sF` | Sends a packet with only the FIN flag set. |
+| **Xmas Scan** | `-sX` | Sends a packet with FIN, PSH, and URG flags set ("lit up like a Christmas tree"). |
+
+---
+
+## **5. Port Specification and Scan Order**
+
+By default, Nmap scans the top 1,000 most common TCP ports.
+
+```bash
+# Scan only specific ports
+nmap -p 80,443,8080 target.com
+
+# Scan a range of ports
+nmap -p 1-1024 target.com
+
+# Scan all 65,535 TCP ports
+nmap -p- target.com
+
+# Scan the top 100 most common ports (Fast scan)
+nmap -F target.com
+
+# Scan both TCP and UDP ports
+nmap -sS -sU -p T:80,443,U:53 target.com
+
+# Randomize port scan order (can help evade some IDS)
+nmap --randomize-targets target.com
+```
+
+---
+
+## **6. Service and Version Detection (`-sV`)**
+
+Finding an open port is only half the battle. You need to know what service is running on it.
+
+```bash
+# Probe open ports to determine service and version info
+nmap -sV target.com
+
+# Set version detection intensity level (0-9, default is 7)
+# Higher is more likely to identify but slower.
+nmap -sV --version-intensity 9 target.com
+```
+
+---
+
+## **7. Operating System Detection (`-O`)**
+
+Nmap can fingerprint a target's OS by analyzing its TCP/IP stack responses.
+
+```bash
+# Enable OS detection
+nmap -O target.com
+
+# The "Aggressive" scan option
+# This is a shortcut that enables OS detection (-O), version detection (-sV),
+# script scanning (-sC), and traceroute (--traceroute).
+nmap -A target.com
+```
+
+---
+
+## **8. Timing and Performance (`-T`)**
+
+Timing templates (`-T0` to `-T5`) allow you to control the speed and stealth of your scan.
+
+*   **`-T0 (Paranoid):** Very slow. Sends packets serially with long delays. Used to evade IDS.
+*   **`-T1 (Sneaky):** Slow. Similar to Paranoid but less intrusive.
+*   **`-T2 (Polite):** Slower than normal. Consumes less bandwidth.
+*   **`-T3 (Normal):** The default timing template. Balances speed and reliability.
+*   **`-T4 (Fast):** Aggressive. Assumes you are on a reasonably fast and reliable network.
+*   **`-T5 (Insane):** Extremely fast. Can overwhelm the target network and miss ports.
+
+```bash
+# Run a fast scan
+nmap -T4 target.com
+
+# Run a very slow, stealthy scan
+nmap -T0 -sS target.com
+```
+
+---
+
+## **9. Firewall and IDS Evasion**
+
+Nmap includes numerous options to bypass firewalls and Intrusion Detection Systems (IDS).
+
+```bash
+# Fragment packets into small pieces
+nmap -f target.com
+
+# Specify a custom MTU (Maximum Transmission Unit)
+nmap --mtu 24 target.com
+
+# Use decoys to make your scan appear to come from multiple IPs
+nmap -D RND:10,MY_IP target.com
+
+# Source Port Manipulation: Scan from a common source port like 53 (DNS) or 443 (HTTPS)
+nmap --source-port 53 target.com
+
+# Append random data to packets
+nmap --data-length 25 target.com
+
+# MAC Address Spoofing
+nmap --spoof-mac 0 target.com # Random
+nmap --spoof-mac Dell target.com # Use a vendor prefix
+```
+
+---
+
+## **10. The Nmap Scripting Engine (NSE)**
+
+This is Nmap's most powerful feature. It uses Lua scripts to automate a wide variety of tasks.
+
+### **Script Categories:**
+*   `auth`: Deals with authentication credentials.
+*   `broadcast`: Discovers hosts by sending broadcast messages.
+*   `brute`: Performs brute-force attacks against credentials.
+*   `default`: Scripts run when you use the `-sC` or `-A` flags.
+*   `discovery`: Actively probes for more information.
+*   `dos`: Tests for denial-of-service vulnerabilities.
+*   `exploit`: Attempts to exploit vulnerabilities.
+*   `external`: Scripts that rely on third-party services.
+*   `intrusive`: Scripts that could crash the target or be flagged by an IDS.
+*   `malware`: Scans for backdoors and malware.
+*   `safe`: Scripts that are not designed to crash the target.
+*   `vuln`: Checks for known vulnerabilities.
+
+### **Running NSE Scripts:**
+```bash
+# Run default scripts (safe and effective)
+nmap -sC target.com
+
+# Run a specific script
+nmap --script http-title target.com
+
+# Run multiple scripts
+nmap --script http-title,http-headers target.com
+
+# Run all scripts in a category
+nmap --script "vuln" target.com
+
+# Run scripts with wildcards
+nmap --script "http-*" target.com
+
+# Run all scripts except those in a category
+nmap --script "all,not intrusive" target.com
+
+# Run a script with arguments
+nmap --script http-sql-inject --script-args 'http-sql-inject.db="mysql"' target.com
+```
+
+### **Popular & Useful Scripts:**
+```bash
+# Check for the Heartbleed vulnerability
+nmap -sV -p 443 --script ssl-heartbleed target.com
+
+# Enumerate SMB shares
+nmap -p 445 --script smb-enum-shares.nse target.com
+
+# Check for anonymous FTP login
+nmap -p 21 --script ftp-anon target.com
+
+# Brute-force HTTP basic auth
+nmap --script http-brute --script-args userdb=users.txt,passdb=pass.txt target.com
+
+# Try a DNS zone transfer
+nmap --script dns-zone-transfer --script-args dns-zone-transfer.domain=example.com target.com
+```
+
+---
+
+## **11. Host Discovery (Ping Scanning)**
+
+Before scanning ports, Nmap can determine which hosts are online.
+
+```bash
+# Disable ping scan. Scan all targets, assuming they are up.
+nmap -Pn target.com
+
+# Only perform host discovery, don't port scan.
+nmap -sn 192.168.1.0/24
+
+# TCP SYN Ping (send SYN to common ports like 80, 443)
+nmap -PS80,443 target.com
+
+# TCP ACK Ping
+nmap -PA target.com
+
+# UDP Ping (send UDP to ports like 53, 40125)
+nmap -PU53 target.com
+
+# ICMP Echo Ping (standard ping)
+nmap -PE target.com
+
+# ARP Ping on a local network (very fast and reliable)
+nmap -PR 192.168.1.0/24
+```
+
+---
+
+## **12. Zenmap (The GUI)**
+
+Zenmap is the official graphical user interface for Nmap. It's excellent for:
+*   Beginners who prefer a point-and-click interface.
+*   Visualizing scan results with topology maps.
+*   Comparing scan results to see what has changed.
+*   Saving and managing scan profiles.
+
+You can launch Zenmap from your terminal by simply typing `zenmap`.
+
+---
+
+## **13. Best Practices & Ethical Considerations**
+
+1.  **NEVER scan networks or hosts you do not own or have explicit, written permission to test.** Unauthorized scanning is illegal in most countries.
+2.  **Be mindful of network impact.** Aggressive scans (`-T5`) can disrupt services or be perceived as an attack. Start with less intrusive scans.
+3.  **Document everything.** Save your scan results (`-oA`) for reports and future analysis.
+4.  **Understand what you are doing.** Don't just run commands without knowing their potential impact. The `-sA` (ACK) scan, for example, can be logged as a port scan even if it doesn't find open ports.
+5.  **Stay updated.** Nmap is actively developed. New scripts and features are added regularly. Keep your version updated to benefit from the latest improvements.
