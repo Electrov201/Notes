@@ -1,0 +1,79 @@
+Objective:
+Your goal is to perform a reconnaissance and enumeration scan on the target machine. You must identify all open ports, the services running on them, and their versions. Your ultimate goal is to find all six hidden "flags" by digging deeper into each discovered service.
+
+
+Target IP: 192.168.74.183
+
+Rules of Engagement:
+
+ONLY perform scans and tests against the provided IP address (192.168.74.183).
+Do not use any aggressive or disruptive (e.g., Denial of Service) tools.
+Document your findings and the commands you used to find each flag.
+
+Recommended Tools:
+
+Nmap: For port scanning and service detection.
+Web Browser (e.g., Firefox, Chrome): To interact with web services.
+cURL: A command-line tool for interacting with web servers.
+Browser: To access webpages
+Redis CLI (redis-cli): To connect to the Redis database.
+
+The Task:
+
+Part : 1
+
+Start with a comprehensive scan to map out the attack surface. Find all open TCP ports and try to determine the service and version information for each.
+
+Hint: A good Nmap command to scan "mostly" everything
+
+Part : 2 
+
+Now that you have a list of open ports and services, investigate each one individually.
+
+1) Port 81 (httpd):
+
+Your Task: A web server is running here. Open it in your browser. Don't just look at the page; remember to check the page's source code for any comments left by developers.
+
+Flag Format: The first flag is a password.
+
+2) Port 8080 (httpd):
+
+Your Task: Another web server. When you visit this one, you might find a common misconfiguration that allows you to see a list of files. Look for a file that seems out of place or contains sensitive information.
+
+Flag Format: The second flag is a username.
+
+3) Port 10000 (httpd):
+
+Your Task: The third web server presents a login portal. You haven't been given any credentials, but perhaps you found some during your investigation of the other services?
+
+Flag Format: The third flag is on the page you see after successfully logging in.
+
+4) Port 6379 (Redis):
+
+Your Task: This is a Redis key-value database. Your goal is to connect to the database and find the flag hidden within it.
+
+Hint: You can connect to it using a Redis client. Once connected, useful commands might be KEYS * to list all keys stored in the database and GET <keyname> to retrieve the value of a specific key.
+
+Flag Format: The fourth flag is the value of one of the keys in the database.
+
+5) Port 3306 (MySQL):
+Your Task: This is a MySQL database server. You will need credentials to log in. You might find the username and password for this service in a different database you've already accessed. Once connected, find the flag hidden within.
+
+Hint: Useful mysql commands include SHOW DATABASES;, USE <db_name>;, SHOW TABLES;, and SELECT * FROM <table_name>;.
+
+Flag Format: The seventh flag is inside a MySQL table.
+
+
+6) Port 8081 (Jenkins):
+
+Your Task: This is a Jenkins automation server. It has a web login page. Try using credentials you have found for other services. Once inside, look for administrative tools, especially a place to run scripts. The flag is hidden there.
+
+Flag Format: The eighth and final flag is hidden in a comment within the Jenkins Script Console.
+
+
+
+
+
+
+
+
